@@ -8,22 +8,37 @@ class GameManager {
     this.playerSockets = new Map();
   }
 
-  createRoom(socket, { roomName, playerName, userId, isPrivate = false }) {
+  createRoom(socket, { roomName, playerName, userId, isPrivate = false, singlePlayer = false }) {
     const roomId = uuidv4();
+    const players = [{
+      id: userId,
+      name: playerName,
+      socketId: socket.id,
+      color: 'red',
+      pieces: this.initializePieces('red'),
+      isReady: false
+    }];
+    
+    if (singlePlayer) {
+      players.push({
+        id: 'ai',
+        name: 'Computer',
+        socketId: 'ai',
+        color: 'blue',
+        pieces: this.initializePieces('blue'),
+        isReady: true,
+        isAI: true
+      });
+    }
+    
     const room = {
       id: roomId,
       name: roomName,
-      players: [{
-        id: userId,
-        name: playerName,
-        socketId: socket.id,
-        color: 'red',
-        pieces: this.initializePieces('red'),
-        isReady: false
-      }],
-      gameState: 'waiting',
+      players,
+      gameState: singlePlayer ? 'playing' : 'waiting',
       currentPlayer: 0,
       isPrivate,
+      singlePlayer,
       createdAt: new Date()
     };
 
@@ -240,10 +255,17 @@ class GameManager {
     room.currentPlayer = (room.currentPlayer + 1) % room.players.length;
     room.canMove = false;
     
+    const currentPlayer = room.players[room.currentPlayer];
+    
     this.io.to(roomId).emit('turn-changed', {
-      currentPlayer: room.players[room.currentPlayer].name,
+      currentPlayer: currentPlayer.name,
       playerIndex: room.currentPlayer
     });
+    
+    // AI turn
+    if (currentPlayer.isAI) {
+      setTimeout(() => this.aiTurn(roomId), 1000);
+    }
   }
 
   handleDisconnect(socket) {
@@ -291,11 +313,91 @@ class GameManager {
       
       // Update player stats
       for (const player of room.players) {
-        const won = player.id === room.winner.id;
-        await this.db.updatePlayerStats(player.id, won, 0);
+        if (player.id !== 'ai') {
+          const won = player.id === room.winner.id;
+          await this.db.updatePlayerStats(player.id, won, 0);
+        }
       }
     } catch (error) {
       console.error('Error saving game result:', error);
+    }
+  }
+  
+  aiTurn(roomId) {
+    const room = this.rooms.get(roomId);
+    if (!room || room.gameState !== 'playing') return;
+    
+    const aiPlayer = room.players[room.currentPlayer];
+    if (!aiPlayer.isAI) return;
+    
+    // AI rolls dice
+    const diceValue = Math.floor(Math.random() * 6) + 1;
+    room.lastDiceRoll = diceValue;
+    room.canMove = true;
+    
+    this.io.to(roomId).emit('dice-rolled', {
+      player: aiPlayer.name,
+      value: diceValue,
+      canMove: true
+    });
+    
+    // AI makes move after delay
+    setTimeout(() => {
+      const movablePieces = this.getMovablePieces(aiPlayer, diceValue);
+      
+      if (movablePieces.length > 0) {
+        // Simple AI: prioritize getting pieces out, then move randomly
+        let pieceIndex = 0;
+        const homePieces = aiPlayer.pieces.filter((p, i) => p.isHome && movablePieces.includes(i));
+        
+        if (homePieces.length > 0 && diceValue === 6) {
+          pieceIndex = aiPlayer.pieces.findIndex(p => p.isHome);
+        } else {
+          pieceIndex = movablePieces[Math.floor(Math.random() * movablePieces.length)];
+        }
+        
+        this.aiMovePiece(roomId, pieceIndex);
+      } else {
+        this.nextTurn(roomId);
+      }
+    }, 1500);
+  }
+  
+  aiMovePiece(roomId, pieceIndex) {
+    const room = this.rooms.get(roomId);
+    if (!room || !room.canMove) return;
+    
+    const aiPlayer = room.players[room.currentPlayer];
+    const piece = aiPlayer.pieces[pieceIndex];
+    const diceValue = room.lastDiceRoll;
+    
+    if (!this.isValidMove(piece, diceValue, aiPlayer.color)) return;
+    
+    const oldPosition = piece.position;
+    piece.position = this.calculateNewPosition(piece, diceValue, aiPlayer.color);
+    
+    this.checkCaptures(room, aiPlayer, piece);
+    
+    if (this.checkWin(aiPlayer)) {
+      room.gameState = 'finished';
+      room.winner = aiPlayer;
+      this.io.to(roomId).emit('game-won', { winner: aiPlayer.name });
+      this.saveGameResult(room);
+      return;
+    }
+    
+    this.io.to(roomId).emit('piece-moved', {
+      player: aiPlayer.name,
+      pieceIndex,
+      oldPosition,
+      newPosition: piece.position
+    });
+    
+    if (diceValue !== 6) {
+      this.nextTurn(roomId);
+    } else {
+      room.canMove = false;
+      setTimeout(() => this.aiTurn(roomId), 1000);
     }
   }
 }

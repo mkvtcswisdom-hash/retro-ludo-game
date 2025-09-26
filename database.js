@@ -77,6 +77,19 @@ class Database {
     });
   }
 
+  getUserByUsername(username) {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        'SELECT * FROM users WHERE username = ?',
+        [username],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
+  }
+
   getUserById(id) {
     return new Promise((resolve, reject) => {
       this.db.get(

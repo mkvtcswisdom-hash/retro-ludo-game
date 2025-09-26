@@ -18,22 +18,37 @@ class AuthManager {
 
     const existingUser = await this.db.getUserByEmail(email);
     if (existingUser) {
-      throw new Error('User already exists');
+      throw new Error('Email already registered');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.db.createUser({
-      username,
-      email,
-      password: hashedPassword
-    });
+    const existingUsername = await this.db.getUserByUsername(username);
+    if (existingUsername) {
+      throw new Error('Username already taken');
+    }
 
-    const token = jwt.sign({ userId: user.id }, this.jwtSecret);
-    return {
-      success: true,
-      user: { id: user.id, username: user.username, email: user.email },
-      token
-    };
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await this.db.createUser({
+        username,
+        email,
+        password: hashedPassword
+      });
+
+      const token = jwt.sign({ userId: user.id }, this.jwtSecret);
+      return {
+        success: true,
+        user: { id: user.id, username: user.username, email: user.email },
+        token
+      };
+    } catch (error) {
+      if (error.message.includes('UNIQUE constraint failed: users.username')) {
+        throw new Error('Username already taken');
+      }
+      if (error.message.includes('UNIQUE constraint failed: users.email')) {
+        throw new Error('Email already registered');
+      }
+      throw new Error('Registration failed. Please try again.');
+    }
   }
 
   async login({ email, password }) {

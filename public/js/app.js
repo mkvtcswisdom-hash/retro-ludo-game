@@ -167,6 +167,16 @@ class LudoApp {
       isPrivate
     });
   }
+  
+  startSinglePlayer() {
+    this.socket.emit('create-room', {
+      roomName: `${this.currentUser.username} vs Computer`,
+      playerName: this.currentUser.username,
+      userId: this.currentUser.id,
+      isPrivate: true,
+      singlePlayer: true
+    });
+  }
 
   joinRoom(roomId) {
     this.socket.emit('join-room', {
@@ -446,6 +456,7 @@ function showRegister() {
 }
 
 function showMainMenu() { app.showMainMenu(); }
+function startSinglePlayer() { app.startSinglePlayer(); }
 function showCreateRoom() { app.showCreateRoom(); }
 function showJoinRoom() { app.showJoinRoom(); }
 function showDashboard() { app.showDashboard(); }
