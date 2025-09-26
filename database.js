@@ -1,168 +1,142 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { Pool } = require('pg');
 
 class Database {
   constructor() {
-    this.db = new sqlite3.Database('ludo_game.db');
+    this.pool = new Pool({
+      connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/ludo_game',
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
     this.init();
   }
 
-  init() {
-    this.db.serialize(() => {
-      this.db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  async init() {
+    try {
+      await this.pool.query(`CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )`);
 
-      this.db.run(`CREATE TABLE IF NOT EXISTS games (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        room_name TEXT NOT NULL,
-        players TEXT NOT NULL,
+      await this.pool.query(`CREATE TABLE IF NOT EXISTS games (
+        id SERIAL PRIMARY KEY,
+        room_name VARCHAR(255) NOT NULL,
+        players JSONB NOT NULL,
         winner_id INTEGER,
-        game_state TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        finished_at DATETIME
+        game_state JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        finished_at TIMESTAMP
       )`);
 
-      this.db.run(`CREATE TABLE IF NOT EXISTS player_stats (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+      await this.pool.query(`CREATE TABLE IF NOT EXISTS player_stats (
+        id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         games_played INTEGER DEFAULT 0,
         games_won INTEGER DEFAULT 0,
         total_moves INTEGER DEFAULT 0,
         FOREIGN KEY (user_id) REFERENCES users (id)
       )`);
-    });
+    } catch (error) {
+      console.error('Database initialization error:', error);
+    }
   }
 
-  createUser(userData) {
-    return new Promise((resolve, reject) => {
-      const { username, email, password } = userData;
-      const db = this.db;
-      db.run(
-        'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-        [username, email, password],
-        function(err) {
-          if (err) reject(err);
-          else {
-            const userId = this.lastID;
-            // Create initial stats
-            db.run(
-              'INSERT INTO player_stats (user_id) VALUES (?)',
-              [userId],
-              (statsErr) => {
-                if (statsErr) console.warn('Stats creation failed:', statsErr);
-                resolve({ id: userId, username, email });
-              }
-            );
-          }
-        }
+  async createUser(userData) {
+    const { username, email, password } = userData;
+    const client = await this.pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      const userResult = await client.query(
+        'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email',
+        [username, email, password]
       );
-    });
-  }
-
-  getUserByEmail(email) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        'SELECT * FROM users WHERE email = ?',
-        [email],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
+      
+      const user = userResult.rows[0];
+      
+      await client.query(
+        'INSERT INTO player_stats (user_id) VALUES ($1)',
+        [user.id]
       );
-    });
+      
+      await client.query('COMMIT');
+      return user;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
-  getUserByUsername(username) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        'SELECT * FROM users WHERE username = ?',
-        [username],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+  async getUserByEmail(email) {
+    const result = await this.pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+    return result.rows[0];
   }
 
-  getUserById(id) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        'SELECT id, username, email FROM users WHERE id = ?',
-        [id],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+  async getUserByUsername(username) {
+    const result = await this.pool.query(
+      'SELECT * FROM users WHERE username = $1',
+      [username]
+    );
+    return result.rows[0];
   }
 
-  getAllPlayers() {
-    return new Promise((resolve, reject) => {
-      this.db.all(`
-        SELECT u.id, u.username, u.email, u.created_at,
-               COALESCE(ps.games_played, 0) as games_played,
-               COALESCE(ps.games_won, 0) as games_won,
-               COALESCE(ps.total_moves, 0) as total_moves
-        FROM users u
-        LEFT JOIN player_stats ps ON u.id = ps.user_id
-        ORDER BY ps.games_won DESC, ps.games_played DESC
-      `, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+  async getUserById(id) {
+    const result = await this.pool.query(
+      'SELECT id, username, email FROM users WHERE id = $1',
+      [id]
+    );
+    return result.rows[0];
   }
 
-  saveGame(gameData) {
-    return new Promise((resolve, reject) => {
-      const { room_name, players, winner_id, game_state } = gameData;
-      this.db.run(
-        'INSERT INTO games (room_name, players, winner_id, game_state, finished_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
-        [room_name, JSON.stringify(players), winner_id, JSON.stringify(game_state)],
-        function(err) {
-          if (err) reject(err);
-          else resolve(this.lastID);
-        }
-      );
-    });
+  async getAllPlayers() {
+    const result = await this.pool.query(`
+      SELECT u.id, u.username, u.email, u.created_at,
+             COALESCE(ps.games_played, 0) as games_played,
+             COALESCE(ps.games_won, 0) as games_won,
+             COALESCE(ps.total_moves, 0) as total_moves
+      FROM users u
+      LEFT JOIN player_stats ps ON u.id = ps.user_id
+      ORDER BY ps.games_won DESC, ps.games_played DESC
+    `);
+    return result.rows;
   }
 
-  updatePlayerStats(userId, won = false, moves = 0) {
-    return new Promise((resolve, reject) => {
-      this.db.run(`
-        UPDATE player_stats 
-        SET games_played = games_played + 1,
-            games_won = games_won + ?,
-            total_moves = total_moves + ?
-        WHERE user_id = ?
-      `, [won ? 1 : 0, moves, userId], (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+  async saveGame(gameData) {
+    const { room_name, players, winner_id, game_state } = gameData;
+    const result = await this.pool.query(
+      'INSERT INTO games (room_name, players, winner_id, game_state, finished_at) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id',
+      [room_name, JSON.stringify(players), winner_id, JSON.stringify(game_state)]
+    );
+    return result.rows[0].id;
   }
 
-  getPlayerHistory(userId) {
-    return new Promise((resolve, reject) => {
-      this.db.all(`
-        SELECT g.*, 
-               CASE WHEN g.winner_id = ? THEN 'Won' ELSE 'Lost' END as result
-        FROM games g
-        WHERE JSON_EXTRACT(g.players, '$[*].id') LIKE '%' || ? || '%'
-        ORDER BY g.finished_at DESC
-        LIMIT 50
-      `, [userId, userId], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
+  async updatePlayerStats(userId, won = false, moves = 0) {
+    await this.pool.query(`
+      UPDATE player_stats 
+      SET games_played = games_played + 1,
+          games_won = games_won + $1,
+          total_moves = total_moves + $2
+      WHERE user_id = $3
+    `, [won ? 1 : 0, moves, userId]);
+  }
+
+  async getPlayerHistory(userId) {
+    const result = await this.pool.query(`
+      SELECT g.*, 
+             CASE WHEN g.winner_id = $1 THEN 'Won' ELSE 'Lost' END as result
+      FROM games g
+      WHERE players::jsonb @> '[{"id": $1}]'
+      ORDER BY g.finished_at DESC
+      LIMIT 50
+    `, [userId]);
+    return result.rows;
   }
 }
 
