@@ -159,6 +159,10 @@ class GameManager {
       room.canMove = false;
       setTimeout(() => this.nextTurn(roomId), 2000);
     }
+    // Keep canMove true for manual selection when multiple pieces available
+    else {
+      room.canMove = true;
+    }
   }
 
   movePiece(socket, { roomId, pieceIndex }) {

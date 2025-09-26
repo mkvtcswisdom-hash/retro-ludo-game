@@ -251,6 +251,7 @@ class LudoGame {
     }
     
     if (!app.currentRoom.canMove) {
+      console.log('canMove is false, room state:', app.currentRoom.canMove);
       app.showNotification('Roll dice first!', 'error');
       return;
     }
@@ -259,7 +260,7 @@ class LudoGame {
     const pieceIndex = this.findPieceAt(gridX, gridY, currentPlayer.color);
     
     if (pieceIndex !== -1) {
-      console.log('Clicked piece:', pieceIndex);
+      console.log('Clicked piece:', pieceIndex, 'canMove:', app.currentRoom.canMove);
       app.socket.emit('move-piece', {
         roomId: app.currentRoom.id,
         pieceIndex: pieceIndex
