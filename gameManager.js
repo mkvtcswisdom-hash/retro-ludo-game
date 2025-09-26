@@ -29,6 +29,7 @@ class GameManager {
         isReady: true,
         isAI: true
       });
+      players[0].isReady = true; // Auto-ready human player in single player
     }
     
     const room = {
@@ -47,6 +48,10 @@ class GameManager {
     
     socket.join(roomId);
     socket.emit('room-created', { roomId, room });
+    
+    if (singlePlayer) {
+      this.io.to(roomId).emit('game-started', { room });
+    }
     
     if (!isPrivate) {
       socket.broadcast.emit('room-list-updated', this.getPublicRooms());
@@ -125,14 +130,23 @@ class GameManager {
     room.lastDiceRoll = diceValue;
     room.canMove = true;
 
+    const movablePieces = this.getMovablePieces(currentPlayer, diceValue);
+    
     this.io.to(roomId).emit('dice-rolled', {
       player: currentPlayer.name,
       value: diceValue,
-      canMove: this.getMovablePieces(currentPlayer, diceValue).length > 0
+      canMove: movablePieces.length > 0,
+      movablePieces: movablePieces.map(i => i)
     });
 
+    // Auto-move if only one piece can move
+    if (movablePieces.length === 1) {
+      setTimeout(() => {
+        this.movePiece({ id: currentPlayer.socketId }, { roomId, pieceIndex: movablePieces[0] });
+      }, 1500);
+    }
     // Auto-pass turn if no moves available
-    if (this.getMovablePieces(currentPlayer, diceValue).length === 0) {
+    else if (movablePieces.length === 0) {
       setTimeout(() => this.nextTurn(roomId), 2000);
     }
   }
@@ -196,11 +210,13 @@ class GameManager {
   }
 
   getMovablePieces(player, diceValue) {
-    return player.pieces.filter(piece => {
-      if (piece.isFinished) return false;
-      if (piece.isHome && diceValue !== 6) return false;
-      return true;
+    const movable = [];
+    player.pieces.forEach((piece, index) => {
+      if (piece.isFinished) return;
+      if (piece.isHome && diceValue !== 6) return;
+      movable.push(index);
     });
+    return movable;
   }
 
   isValidMove(piece, diceValue, color) {
@@ -398,6 +414,27 @@ class GameManager {
     } else {
       room.canMove = false;
       setTimeout(() => this.aiTurn(roomId), 1000);
+    }
+  }
+  
+  playerReady(socket, { roomId }) {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+    
+    const player = room.players.find(p => p.socketId === socket.id);
+    if (!player) return;
+    
+    player.isReady = true;
+    
+    this.io.to(roomId).emit('player-ready-update', { room });
+    
+    // Check if all players are ready
+    const allReady = room.players.every(p => p.isReady);
+    const minPlayers = room.players.length >= 2;
+    
+    if (allReady && minPlayers && room.gameState === 'waiting') {
+      room.gameState = 'playing';
+      this.io.to(roomId).emit('game-started', { room });
     }
   }
 }

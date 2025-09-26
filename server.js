@@ -90,6 +90,10 @@ io.on('connection', (socket) => {
     gameManager.movePiece(socket, data);
   });
 
+  socket.on('player-ready', (data) => {
+    gameManager.playerReady(socket, data);
+  });
+
   socket.on('disconnect', () => {
     gameManager.handleDisconnect(socket);
     console.log('User disconnected:', socket.id);

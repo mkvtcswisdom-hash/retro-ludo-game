@@ -292,6 +292,9 @@ class LudoGame {
   }
 
   highlightMovablePieces(color, movablePieces) {
+    // Redraw board first to clear previous highlights
+    this.drawBoard();
+    
     // Highlight pieces that can be moved
     movablePieces.forEach(pieceIndex => {
       const piece = this.pieces[color][pieceIndex];
@@ -307,13 +310,17 @@ class LudoGame {
       
       // Draw highlight
       this.ctx.strokeStyle = '#ffff00';
-      this.ctx.lineWidth = 3;
+      this.ctx.lineWidth = 4;
       this.ctx.beginPath();
       this.ctx.arc(x * this.cellSize + this.cellSize/2, 
                   y * this.cellSize + this.cellSize/2, 
-                  this.cellSize/3 + 5, 0, 2 * Math.PI);
+                  this.cellSize/3 + 8, 0, 2 * Math.PI);
       this.ctx.stroke();
     });
+  }
+  
+  clearHighlights() {
+    this.drawBoard();
   }
 }
 

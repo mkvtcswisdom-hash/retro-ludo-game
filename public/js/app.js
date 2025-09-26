@@ -92,6 +92,17 @@ class LudoApp {
       this.showGameResult(data);
     });
 
+    this.socket.on('player-ready-update', (data) => {
+      this.currentRoom = data.room;
+      this.updateGameRoom();
+    });
+
+    this.socket.on('game-started', (data) => {
+      this.currentRoom = data.room;
+      this.showNotification('Game Started! Roll dice to begin.', 'success');
+      this.updateGameRoom();
+    });
+
     this.socket.on('room-list-updated', (rooms) => {
       this.updateRoomsList(rooms);
     });
@@ -284,9 +295,25 @@ class LudoApp {
       playerCard.innerHTML = `
         <div>${player.name}</div>
         <div style="color: ${player.color}">${player.color.toUpperCase()}</div>
+        <div>${player.isReady ? '✓ READY' : 'NOT READY'}</div>
       `;
       playersPanel.appendChild(playerCard);
     });
+    
+    // Update ready button
+    const readyBtn = document.getElementById('ready-btn');
+    const currentPlayer = this.currentRoom.players.find(p => p.socketId === this.socket.id);
+    if (readyBtn && currentPlayer) {
+      readyBtn.textContent = currentPlayer.isReady ? 'READY ✓' : 'READY';
+      readyBtn.style.background = currentPlayer.isReady ? '#00ff00' : 'transparent';
+      readyBtn.style.color = currentPlayer.isReady ? '#000' : '#00ff00';
+    }
+    
+    // Show/hide dice button based on game state
+    const diceBtn = document.getElementById('dice-btn');
+    if (diceBtn) {
+      diceBtn.style.display = this.currentRoom.gameState === 'playing' ? 'block' : 'none';
+    }
 
     if (this.currentRoom.gameState === 'playing') {
       this.updateCurrentPlayer({
@@ -302,7 +329,22 @@ class LudoApp {
   updateDiceDisplay(data) {
     document.getElementById('dice-value').textContent = `Rolled: ${data.value}`;
     
+    if (data.canMove && data.movablePieces && window.ludoGame) {
+      const currentPlayer = this.currentRoom.players[this.currentRoom.currentPlayer];
+      if (currentPlayer.socketId === this.socket.id) {
+        // Highlight movable pieces
+        window.ludoGame.highlightMovablePieces(currentPlayer.color, data.movablePieces);
+        
+        if (data.movablePieces.length === 1) {
+          this.showNotification('Auto-moving your only available piece...', 'info');
+        } else {
+          this.showNotification('Click on a highlighted piece to move', 'info');
+        }
+      }
+    }
+    
     if (!data.canMove) {
+      this.showNotification('No valid moves available', 'error');
       setTimeout(() => {
         document.getElementById('dice-value').textContent = '';
       }, 2000);
@@ -313,7 +355,9 @@ class LudoApp {
     // This will be handled by the game.js file
     if (window.ludoGame) {
       window.ludoGame.updatePiecePosition(data);
+      window.ludoGame.clearHighlights();
     }
+    document.getElementById('dice-value').textContent = '';
   }
 
   showGameResult(data) {
@@ -491,6 +535,12 @@ function sendInvite() {
 
 function searchPlayers() {
   app.loadPlayers();
+}
+
+function toggleReady() {
+  if (app.currentRoom) {
+    app.socket.emit('player-ready', { roomId: app.currentRoom.id });
+  }
 }
 
 // Initialize the app
