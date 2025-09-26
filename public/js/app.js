@@ -343,13 +343,13 @@ class LudoApp {
         if (data.movablePieces.length === 1) {
           this.showNotification('Auto-moving your only available piece...', 'info');
         } else {
-          this.showNotification('Click on a highlighted piece to move', 'info');
+          this.showNotification('Select a highlighted piece to move', 'info');
         }
       }
     }
     
     if (!data.canMove) {
-      this.showNotification('No valid moves available', 'error');
+      this.showNotification('No valid moves - turn passed', 'error');
       setTimeout(() => {
         document.getElementById('dice-value').textContent = '';
       }, 2000);

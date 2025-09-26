@@ -218,22 +218,54 @@ class LudoGame {
       
       this.handleCellClick(gridX, gridY);
     });
+    
+    // Add hover effect
+    this.canvas.addEventListener('mousemove', (event) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      const gridX = Math.floor(x / this.cellSize);
+      const gridY = Math.floor(y / this.cellSize);
+      
+      if (app.currentRoom && app.currentRoom.gameState === 'playing') {
+        const currentPlayer = app.currentRoom.players[app.currentRoom.currentPlayer];
+        if (currentPlayer && currentPlayer.socketId === app.socket.id) {
+          const pieceIndex = this.findPieceAt(gridX, gridY, currentPlayer.color);
+          this.canvas.style.cursor = pieceIndex !== -1 ? 'pointer' : 'default';
+        }
+      }
+    });
   }
 
   handleCellClick(gridX, gridY) {
-    if (!app.currentRoom || app.currentRoom.gameState !== 'playing') return;
+    if (!app.currentRoom || app.currentRoom.gameState !== 'playing') {
+      console.log('Game not active');
+      return;
+    }
     
     const currentPlayer = app.currentRoom.players[app.currentRoom.currentPlayer];
-    if (currentPlayer.socketId !== app.socket.id) return;
+    if (currentPlayer.socketId !== app.socket.id) {
+      app.showNotification('Not your turn!', 'error');
+      return;
+    }
+    
+    if (!app.currentRoom.canMove) {
+      app.showNotification('Roll dice first!', 'error');
+      return;
+    }
     
     // Find if there's a piece at this position
     const pieceIndex = this.findPieceAt(gridX, gridY, currentPlayer.color);
     
     if (pieceIndex !== -1) {
+      console.log('Clicked piece:', pieceIndex);
       app.socket.emit('move-piece', {
         roomId: app.currentRoom.id,
         pieceIndex: pieceIndex
       });
+    } else {
+      app.showNotification('Click on your highlighted piece', 'info');
     }
   }
 
