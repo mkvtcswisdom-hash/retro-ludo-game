@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Ludo Game</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="retro-container">
+                <h1 class="game-title">RETRO LUDO</h1>
+                <div class="auth-form">
+                    <div class="form-tabs">
+                        <button class="tab-btn active" onclick="showLogin()">LOGIN</button>
+                        <button class="tab-btn" onclick="showRegister()">REGISTER</button>
+                    </div>
+                    
+                    <form id="login-form" class="auth-form-content">
+                        <input type="email" id="login-email" placeholder="EMAIL" required>
+                        <input type="password" id="login-password" placeholder="PASSWORD" required>
+                        <button type="submit" class="retro-btn">LOGIN</button>
+                    </form>
+                    
+                    <form id="register-form" class="auth-form-content hidden">
+                        <input type="text" id="register-username" placeholder="USERNAME" required>
+                        <input type="email" id="register-email" placeholder="EMAIL" required>
+                        <input type="password" id="register-password" placeholder="PASSWORD" required>
+                        <button type="submit" class="retro-btn">REGISTER</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="screen">
+            <div class="retro-container">
+                <h1 class="game-title">RETRO LUDO</h1>
+                <div class="menu-buttons">
+                    <button class="retro-btn" onclick="showCreateRoom()">CREATE ROOM</button>
+                    <button class="retro-btn" onclick="showJoinRoom()">JOIN ROOM</button>
+                    <button class="retro-btn" onclick="showDashboard()">DASHBOARD</button>
+                    <button class="retro-btn" onclick="showHistory()">MY HISTORY</button>
+                    <button class="retro-btn" onclick="logout()">LOGOUT</button>
+                </div>
+                <div class="player-info">
+                    <span id="player-name"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Room -->
+        <div id="create-room" class="screen">
+            <div class="retro-container">
+                <h2>CREATE ROOM</h2>
+                <form id="create-room-form">
+                    <input type="text" id="room-name" placeholder="ROOM NAME" required>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="private-room"> PRIVATE ROOM
+                    </label>
+                    <div class="form-buttons">
+                        <button type="submit" class="retro-btn">CREATE</button>
+                        <button type="button" class="retro-btn" onclick="showMainMenu()">BACK</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Join Room -->
+        <div id="join-room" class="screen">
+            <div class="retro-container">
+                <h2>JOIN ROOM</h2>
+                <div class="room-search">
+                    <input type="text" id="search-room" placeholder="SEARCH ROOMS...">
+                </div>
+                <div id="rooms-list" class="rooms-list"></div>
+                <button class="retro-btn" onclick="showMainMenu()">BACK</button>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="screen">
+            <div class="retro-container">
+                <h2>PLAYER DASHBOARD</h2>
+                <div class="dashboard-content">
+                    <div class="search-players">
+                        <input type="text" id="search-players" placeholder="SEARCH PLAYERS...">
+                        <button class="retro-btn" onclick="searchPlayers()">SEARCH</button>
+                    </div>
+                    <div id="players-list" class="players-list"></div>
+                </div>
+                <button class="retro-btn" onclick="showMainMenu()">BACK</button>
+            </div>
+        </div>
+
+        <!-- Game Room -->
+        <div id="game-room" class="screen">
+            <div class="game-container">
+                <div class="game-header">
+                    <h3 id="room-title"></h3>
+                    <div class="game-info">
+                        <span id="current-player"></span>
+                        <button id="dice-btn" class="dice-btn" onclick="rollDice()">🎲</button>
+                        <span id="dice-value"></span>
+                    </div>
+                </div>
+                
+                <div class="game-board">
+                    <canvas id="ludo-board" width="600" height="600"></canvas>
+                </div>
+                
+                <div class="players-panel">
+                    <div id="players-in-room"></div>
+                    <div class="room-actions">
+                        <button class="retro-btn" onclick="leaveRoom()">LEAVE ROOM</button>
+                        <button id="invite-btn" class="retro-btn" onclick="showInviteModal()">INVITE</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div id="history" class="screen">
+            <div class="retro-container">
+                <h2>GAME HISTORY</h2>
+                <div id="history-list" class="history-list"></div>
+                <button class="retro-btn" onclick="showMainMenu()">BACK</button>
+            </div>
+        </div>
+
+        <!-- Invite Modal -->
+        <div id="invite-modal" class="modal">
+            <div class="modal-content">
+                <h3>INVITE PLAYER</h3>
+                <input type="text" id="invite-user-id" placeholder="USER ID">
+                <div class="modal-buttons">
+                    <button class="retro-btn" onclick="sendInvite()">INVITE</button>
+                    <button class="retro-btn" onclick="closeInviteModal()">CANCEL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

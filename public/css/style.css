@@ -1,0 +1,316 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Press Start 2P', monospace;
+  background: linear-gradient(45deg, #1a1a2e, #16213e);
+  color: #00ff00;
+  overflow-x: hidden;
+}
+
+.screen {
+  display: none;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.screen.active {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.retro-container {
+  background: rgba(0, 0, 0, 0.8);
+  border: 3px solid #00ff00;
+  border-radius: 10px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 0 20px #00ff00;
+  max-width: 500px;
+  width: 100%;
+}
+
+.game-title {
+  font-size: 2.5rem;
+  color: #ff6b6b;
+  text-shadow: 3px 3px 0px #000;
+  margin-bottom: 30px;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { text-shadow: 3px 3px 0px #000, 0 0 10px #ff6b6b; }
+  to { text-shadow: 3px 3px 0px #000, 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; }
+}
+
+.auth-form {
+  width: 100%;
+}
+
+.form-tabs {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: 2px solid #00ff00;
+  color: #00ff00;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.tab-btn.active {
+  background: #00ff00;
+  color: #000;
+}
+
+.auth-form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.auth-form-content.hidden {
+  display: none;
+}
+
+input {
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #00ff00;
+  color: #00ff00;
+  font-family: inherit;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+input::placeholder {
+  color: #666;
+}
+
+.retro-btn {
+  padding: 15px 25px;
+  background: transparent;
+  border: 2px solid #00ff00;
+  color: #00ff00;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin: 5px;
+}
+
+.retro-btn:hover {
+  background: #00ff00;
+  color: #000;
+  box-shadow: 0 0 15px #00ff00;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.player-info {
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px solid #00ff00;
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #00ff00;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.rooms-list, .players-list, .history-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 20px 0;
+  border: 2px solid #00ff00;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.room-item, .player-item, .history-item {
+  padding: 15px;
+  border-bottom: 1px solid #00ff00;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.room-item:hover, .player-item:hover {
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 20px;
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #00ff00;
+  margin-bottom: 20px;
+}
+
+.game-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.dice-btn {
+  font-size: 2rem;
+  padding: 10px;
+  background: transparent;
+  border: 2px solid #00ff00;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.dice-btn:hover {
+  background: #00ff00;
+  transform: scale(1.1);
+}
+
+.game-board {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #00ff00;
+  margin-bottom: 20px;
+}
+
+#ludo-board {
+  border: 2px solid #fff;
+  background: #f0f0f0;
+}
+
+.players-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #00ff00;
+}
+
+#players-in-room {
+  display: flex;
+  gap: 20px;
+}
+
+.player-card {
+  padding: 10px;
+  border: 2px solid #00ff00;
+  background: rgba(0, 255, 0, 0.1);
+  text-align: center;
+}
+
+.room-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+}
+
+.modal.active {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: rgba(0, 0, 0, 0.9);
+  border: 3px solid #00ff00;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 0 20px #00ff00;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.dashboard-content {
+  width: 100%;
+}
+
+.search-players {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-players input {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .game-title {
+    font-size: 1.5rem;
+  }
+  
+  .retro-container {
+    padding: 20px;
+    margin: 10px;
+  }
+  
+  .game-container {
+    padding: 10px;
+  }
+  
+  #ludo-board {
+    width: 100%;
+    height: auto;
+  }
+  
+  .players-panel {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
