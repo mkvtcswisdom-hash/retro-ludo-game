@@ -120,11 +120,18 @@ class GameManager {
   }
 
   rollDice(socket, { roomId }) {
+    console.log('rollDice called for room:', roomId);
     const room = this.rooms.get(roomId);
-    if (!room || room.gameState !== 'playing') return;
+    if (!room || room.gameState !== 'playing') {
+      console.log('Room not found or not playing:', room?.gameState);
+      return;
+    }
 
     const currentPlayer = room.players[room.currentPlayer];
-    if (currentPlayer.socketId !== socket.id) return;
+    if (currentPlayer.socketId !== socket.id) {
+      console.log('Not current player turn:', currentPlayer.socketId, 'vs', socket.id);
+      return;
+    }
 
     const diceValue = Math.floor(Math.random() * 6) + 1;
     room.lastDiceRoll = diceValue;
@@ -132,7 +139,7 @@ class GameManager {
 
     const movablePieces = this.getMovablePieces(currentPlayer, diceValue);
     
-    console.log('Dice rolled:', diceValue, 'Movable pieces:', movablePieces);
+    console.log('Dice rolled:', diceValue, 'by', currentPlayer.name, 'Movable pieces:', movablePieces);
     
     this.io.to(roomId).emit('dice-rolled', {
       player: currentPlayer.name,

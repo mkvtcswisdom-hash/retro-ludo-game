@@ -309,10 +309,15 @@ class LudoApp {
       readyBtn.style.color = currentPlayer.isReady ? '#000' : '#00ff00';
     }
     
-    // Show/hide dice button based on game state
+    // Show/hide dice button based on game state and current player
     const diceBtn = document.getElementById('dice-btn');
     if (diceBtn) {
-      diceBtn.style.display = this.currentRoom.gameState === 'playing' ? 'block' : 'none';
+      const isMyTurn = this.currentRoom.gameState === 'playing' && 
+                      this.currentRoom.players[this.currentRoom.currentPlayer]?.socketId === this.socket.id;
+      diceBtn.style.display = this.currentRoom.gameState === 'playing' ? 'inline-block' : 'none';
+      diceBtn.disabled = !isMyTurn;
+      diceBtn.style.opacity = isMyTurn ? '1' : '0.5';
+      console.log('Dice button - gameState:', this.currentRoom.gameState, 'isMyTurn:', isMyTurn);
     }
 
     if (this.currentRoom.gameState === 'playing') {
@@ -512,8 +517,12 @@ function logout() { app.logout(); }
 function leaveRoom() { app.showMainMenu(); }
 
 function rollDice() {
+  console.log('Roll dice clicked');
   if (app.currentRoom) {
+    console.log('Emitting roll-dice for room:', app.currentRoom.id);
     app.socket.emit('roll-dice', { roomId: app.currentRoom.id });
+  } else {
+    console.log('No current room');
   }
 }
 
