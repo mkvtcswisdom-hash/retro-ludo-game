@@ -227,12 +227,16 @@ class GameManager {
 
   calculateNewPosition(piece, diceValue, color) {
     if (piece.isHome) {
-      const startPositions = { red: 14, blue: 27, green: 40, yellow: 1 };
+      const startPositions = { red: 1, blue: 14, green: 27, yellow: 40 };
       piece.isHome = false;
       return startPositions[color];
     }
     
-    return (piece.position + diceValue) % 52;
+    let newPosition = piece.position + diceValue;
+    if (newPosition >= 52) {
+      newPosition = newPosition - 52;
+    }
+    return newPosition;
   }
 
   checkCaptures(room, currentPlayer, movedPiece) {

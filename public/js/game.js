@@ -127,29 +127,25 @@ class LudoGame {
   getPathCells() {
     const path = [];
     
-    // Bottom row (red start)
-    for (let x = 6; x <= 8; x++) path.push([x, 14]);
-    for (let y = 13; y >= 9; y--) path.push([8, y]);
+    // Red start and path (bottom-left to right)
+    path.push([1, 8]); // 0 - Red start
+    for (let x = 2; x <= 6; x++) path.push([x, 8]); // 1-5
+    for (let y = 7; y >= 0; y--) path.push([6, y]); // 6-13
     
-    // Right column
-    for (let x = 9; x <= 14; x++) path.push([x, 8]);
-    for (let y = 7; y >= 6; y--) path.push([14, y]);
-    for (let y = 5; y >= 0; y--) path.push([14, y]);
+    // Blue start and path (top to bottom-right)
+    path.push([7, 0]); // 14 - Blue start  
+    for (let y = 1; y <= 6; y++) path.push([7, y]); // 15-20
+    for (let x = 8; x <= 14; x++) path.push([x, 6]); // 21-27
     
-    // Top row (blue start)
-    for (let x = 13; x >= 9; x--) path.push([x, 0]);
-    for (let y = 1; y <= 5; y++) path.push([8, y]);
+    // Green start and path (right to left-bottom)
+    path.push([14, 7]); // 28 - Green start
+    for (let y = 8; y <= 13; y++) path.push([14, y]); // 29-34
+    for (let x = 13; x >= 8; x--) path.push([x, 13]); // 35-40
     
-    // Top column
-    for (let x = 7; x >= 0; x--) path.push([x, 6]);
-    for (let y = 7; y <= 8; y++) path.push([0, y]);
-    
-    // Left row (yellow start)
-    for (let y = 9; y <= 14; y++) path.push([0, y]);
-    for (let x = 1; x <= 5; x++) path.push([x, 14]);
-    
-    // Left column
-    for (let y = 13; y >= 9; y--) path.push([6, y]);
+    // Yellow start and path (bottom to top-left)
+    path.push([7, 14]); // 41 - Yellow start
+    for (let x = 6; x >= 1; x--) path.push([x, 14]); // 42-47
+    for (let y = 13; y >= 8; y--) path.push([1, y]); // 48-51
     
     return path;
   }
@@ -285,7 +281,7 @@ class LudoGame {
     // Initialize pieces based on room data
     if (roomData && roomData.players) {
       roomData.players.forEach(player => {
-        this.pieces[player.color] = player.pieces;
+        this.pieces[player.color] = player.pieces || [];
       });
       this.drawBoard();
     }

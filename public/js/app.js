@@ -473,6 +473,9 @@ class LudoApp {
     setTimeout(() => {
       if (window.LudoGame) {
         window.ludoGame = new LudoGame('ludo-board');
+        if (this.currentRoom) {
+          window.ludoGame.initializePieces(this.currentRoom);
+        }
       }
     }, 100);
   }
