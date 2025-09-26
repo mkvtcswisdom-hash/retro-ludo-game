@@ -132,11 +132,13 @@ class GameManager {
 
     const movablePieces = this.getMovablePieces(currentPlayer, diceValue);
     
+    console.log('Dice rolled:', diceValue, 'Movable pieces:', movablePieces);
+    
     this.io.to(roomId).emit('dice-rolled', {
       player: currentPlayer.name,
       value: diceValue,
       canMove: movablePieces.length > 0,
-      movablePieces: movablePieces.map(i => i)
+      movablePieces: movablePieces
     });
 
     // Auto-move if only one piece can move
@@ -147,25 +149,40 @@ class GameManager {
     }
     // Auto-pass turn if no moves available
     else if (movablePieces.length === 0) {
+      room.canMove = false;
       setTimeout(() => this.nextTurn(roomId), 2000);
     }
   }
 
   movePiece(socket, { roomId, pieceIndex }) {
     const room = this.rooms.get(roomId);
-    if (!room || room.gameState !== 'playing' || !room.canMove) return;
+    if (!room || room.gameState !== 'playing' || !room.canMove) {
+      console.log('Move rejected: room state', room?.gameState, 'canMove', room?.canMove);
+      return;
+    }
 
     const currentPlayer = room.players[room.currentPlayer];
-    if (currentPlayer.socketId !== socket.id) return;
+    if (currentPlayer.socketId !== socket.id) {
+      console.log('Move rejected: wrong player');
+      return;
+    }
 
     const piece = currentPlayer.pieces[pieceIndex];
     const diceValue = room.lastDiceRoll;
+    
+    console.log('Moving piece:', pieceIndex, 'isHome:', piece.isHome, 'dice:', diceValue);
 
-    if (!this.isValidMove(piece, diceValue, currentPlayer.color)) return;
+    if (!this.isValidMove(piece, diceValue, currentPlayer.color)) {
+      console.log('Move rejected: invalid move');
+      return;
+    }
 
     // Move piece
     const oldPosition = piece.position;
+    const wasHome = piece.isHome;
     piece.position = this.calculateNewPosition(piece, diceValue, currentPlayer.color);
+    
+    console.log('Piece moved from', oldPosition, 'to', piece.position, 'wasHome:', wasHome);
     
     // Check for captures
     this.checkCaptures(room, currentPlayer, piece);
@@ -183,7 +200,8 @@ class GameManager {
       player: currentPlayer.name,
       pieceIndex,
       oldPosition,
-      newPosition: piece.position
+      newPosition: piece.position,
+      wasHome
     });
 
     // Next turn (unless rolled 6)

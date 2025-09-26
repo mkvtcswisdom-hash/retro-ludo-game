@@ -268,8 +268,15 @@ class LudoGame {
         const piece = player.pieces[data.pieceIndex];
         piece.position = data.newPosition;
         
+        // If piece was moved from home, update isHome status
+        if (data.wasHome) {
+          piece.isHome = false;
+        }
+        
         // Update local pieces array
         this.pieces[player.color] = player.pieces;
+        
+        console.log('Updated piece position:', data.pieceIndex, 'to', data.newPosition, 'isHome:', piece.isHome);
         
         // Redraw the board
         this.drawBoard();
