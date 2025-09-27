@@ -42,4 +42,9 @@ console.log('✅ Dependencies installed');
 
 // Start the server
 console.log('\n🚀 Starting server...\n');
-require('./server.js');
+try {
+  require('./server.js');
+} catch (error) {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+}

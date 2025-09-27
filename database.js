@@ -4,9 +4,12 @@ class Database {
   constructor() {
     this.pool = new Pool({
       connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/ludo_game',
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 10
     });
-    this.init();
+    this.init().catch(err => console.error('Database init failed:', err));
   }
 
   async init() {
